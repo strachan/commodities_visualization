@@ -3,6 +3,22 @@ library(shinydashboard)
 
 shinyUI(dashboardPage(
   dashboardHeader(title = 'Commodities'),
-  dashboardSidebar(),
-  dashboardBody()
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem('Map', tabName = 'map', icon = icon('map'))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # Map tab content
+      tabItem(tabName = 'map',
+        fluidRow(),
+        fluidRow(
+          box(
+            htmlOutput('world_map'), width = 'auto'
+          )
+        )
+      )
+    )
+  )
 ))
