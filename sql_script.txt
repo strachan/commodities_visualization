@@ -1,0 +1,37 @@
+
+sqlite3
+
+.open commodities.sqlite
+
+BEGIN TRANSACTION;
+CREATE TABLE commodity
+(
+  id INTEGER NOT NULL,
+  commodity TEXT NOT NULL,
+  CONSTRAINT PK_Commodity PRIMARY KEY (id)
+);
+
+CREATE TABLE category
+(
+  id INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  CONSTRAINT PK_Category PRIMARY KEY (id)
+);
+
+CREATE TABLE trade
+(
+  country_or_area TEXT,
+  year INTEGER,
+  flow TEXT,
+  trade_usd INTEGER,
+  commodity_id INTEGER,
+  category_id INTEGER,
+  CONSTRAINT FK_Trade_Commodity FOREIGN KEY (commodity_id) REFERENCES commodity(id),
+  CONSTRAINT FK_Trade_Category FOREIGN KEY (category_id) REFERENCES category(id)
+);
+PRAGMA foreign_keys = ON;
+COMMIT;
+
+.quit
+
+
