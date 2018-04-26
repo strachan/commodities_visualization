@@ -12,7 +12,13 @@ shinyUI(dashboardPage(
     tabItems(
       # Map tab content
       tabItem(tabName = 'map',
-        fluidRow(),
+        fluidRow(
+          column(6, uiOutput("commodities_options")),
+          column(6, uiOutput("year_options"))
+        ),
+        fluidRow(
+          column(6, uiOutput("flow_options"))
+        ),
         fluidRow(
           box(
             htmlOutput('world_map'), width = 'auto'
