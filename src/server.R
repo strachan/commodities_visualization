@@ -11,6 +11,11 @@ shinyServer(function(input, output, session){
     dbGetData(conn, commodity_id)
   })  
   
+  observeEvent(input$category_selection, {
+    commodities_to_select <- commodities[category_id == categories[category == input$category_selection]$id]$commodity
+    updateSelectInput(session, inputId = 'commodity_selection', choices = commodities_to_select)
+  })
+  
   observeEvent(input$commodity_selection, {
     years <- unique(trade()$year)
     updateSliderInput(session, inputId = 'year_selection', value = max(years), min = min(years), max = max(years))
