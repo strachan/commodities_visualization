@@ -14,7 +14,7 @@ shinyUI(dashboardPage(
       tabItem(tabName = 'map',
         fluidRow(
           column(6, selectizeInput(inputId = 'commodity_selection', label = 'Commodity', 
-                                   choices = c('Sheep, live'), selected = 'Sheep, live')),
+                                   choices = commodities$commodity)),
           column(6, sliderInput(inputId = "year_selection", label = "Year", min = NULL, max = NULL, 
                                 value = NULL, step = 1))
         ),

@@ -1,6 +1,6 @@
 
+source('./helpers.R')
 
-conn <- dbConnector('./commodities.sqlite')
-
-commodities <- dbGetCommodities(conn)
-categories <- dbGetCategories(conn)
+domainTables <- dbGetAllDomainTables(dbname = './commodities.sqlite')
+commodities <- domainTables[[1]]
+categories <- domainTables[[2]]

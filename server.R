@@ -4,11 +4,6 @@ library(data.table)
 
 source('./helpers.R')
 
-domainTables <- dbGetAllDomainTables(dbname = './commodities.sqlite')
-
-commodities <- domainTables[[1]]
-categories <- domainTables[[2]]
-
 shinyServer(function(input, output, session){
   
   conn <- dbConnector(dbname = './commodities.sqlite')
