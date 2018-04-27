@@ -1,6 +1,6 @@
 
-
 dbGetCommodities <- function(conn) {
+  require(data.table)
   # query to get all commodities from domain table
   query <- 'SELECT * FROM commodity'
   as.data.table(dbGetQuery(conn = conn,
@@ -8,6 +8,7 @@ dbGetCommodities <- function(conn) {
 }
 
 dbGetCategories <- function(conn) {
+  require(data.table)
   # query to get all categories from domain table
   query <- 'SELECT * FROM category'
   as.data.table(dbGetQuery(conn = conn,
@@ -28,16 +29,21 @@ dbGetAllDomainTables <- function(dbname) {
   list(commodity, category)
 }
 
-dbConnector <- function(dbname) {
+dbConnector <- function(session, dbname) {
   require(RSQLite)
   # set up connection to a database
   conn <- dbConnect(drv = SQLite(),
                     dbname = dbname)
+  ## disconnect database when session ends
+  session$onSessionEnded(function() {
+    dbDisconnect(conn)
+  })
   # return conn
   conn
 }
 
 dbGetData <- function(conn, commodity_id) {
+  require(data.table)
   # query to select all data filtering by commodity
   query <- paste('SELECT trade.*, commodity.commodity FROM trade',
                  'JOIN commodity ON trade.commodity_id = commodity.id',
