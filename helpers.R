@@ -1,4 +1,33 @@
 
+
+dbGetCommodities <- function(conn) {
+  # query to get all commodities from domain table
+  query <- 'SELECT * FROM commodity'
+  as.data.table(dbGetQuery(conn = conn,
+                           statement = query))
+}
+
+dbGetCategories <- function(conn) {
+  # query to get all categories from domain table
+  query <- 'SELECT * FROM category'
+  as.data.table(dbGetQuery(conn = conn,
+                           statement = query))
+}
+
+dbGetAllDomainTables <- function(dbname) {
+  require(RSQLite)
+  # set up connection to a database
+  conn <- dbConnect(drv = SQLite(),
+                    dbname = dbname)
+  # get the domain tables
+  commodity <- dbGetCommodities(conn)
+  category <- dbGetCategories(conn)
+  # close the connection
+  dbDisconnect(conn)
+  # return the values
+  list(commodity, category)
+}
+
 dbConnector <- function(dbname) {
   require(RSQLite)
   # set up connection to a database
@@ -14,20 +43,6 @@ dbGetData <- function(conn, commodity_id) {
                  'JOIN commodity ON trade.commodity_id = commodity.id',
                  'WHERE commodity.id =',
                  commodity_id)
-  as.data.table(dbGetQuery(conn = conn,
-                           statement = query))
-}
-
-dbGetCommodities <- function(conn) {
-  # query to get all commodities from domain table
-  query <- 'SELECT * FROM commodity'
-  as.data.table(dbGetQuery(conn = conn,
-                           statement = query))
-}
-
-dbGetCategories <- function(conn) {
-  # query to get all categories from domain table
-  query <- 'SELECT * FROM category'
   as.data.table(dbGetQuery(conn = conn,
                            statement = query))
 }
