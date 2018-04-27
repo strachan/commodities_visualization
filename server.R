@@ -2,35 +2,30 @@ library(shiny)
 library(googleVis)
 library(data.table)
 
-# load data 
-commodities = fread(file ='../commodity_trade_statistics_data.csv')
+source('./helpers.R')
 
-shinyServer(function(input, output){
+shinyServer(function(input, output, session){
   
-  commodities_options = unique(commodities$commodity)
-  years = unique(commodities$year)
+  trade <- reactive({
+    commodity_id = commodities[commodity == input$commodity_selection]$id
+    dbGetData(conn, commodity_id)
+  })  
   
-  country_commodity <- reactive({
-    commodities[year == input$year_selected & commodity == input$commodity_selected & flow == input$flow_selected]
+  observeEvent(input$commodity_selection, {
+    years <- unique(trade()$year)
+    updateSliderInput(session, inputId = 'year_selection', value = max(years), min = min(years), max = max(years))
+  })
+  
+  countries <- reactive({
+    data_trade <- trade()
+    data_trade[year == input$year_selection & commodity == input$commodity_selection & flow == input$flow_selection]
   }) 
   
   output$world_map <- renderGvis({
-    gvisGeoChart(country_commodity(), "country_or_area", 'trade_usd',
+    data_countries <- countries()
+    gvisGeoChart(data = data_countries, locationvar = "country_or_area", colorvar = 'trade_usd',
                  options=list(region="world", displayMode="regions", 
                               resolution="countries",
                               width="auto", height="auto"))
-  })
-  
-  output$commodities_options <- renderUI({
-    selectInput('commodity_selected', 'Select Commodity', as.list(commodities_options))
-  })
-  
-  output$year_options <- renderUI({
-    sliderInput("year_selected", "Year", min = min(years), max = max(years), 
-                value = max(years), step = 1)
-  })
-  
-  output$flow_options <- renderUI({
-    radioButtons("flow_selected", "Flow:", c("Import", "Export"))
   })
 })

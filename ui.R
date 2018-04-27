@@ -13,11 +13,14 @@ shinyUI(dashboardPage(
       # Map tab content
       tabItem(tabName = 'map',
         fluidRow(
-          column(6, uiOutput("commodities_options")),
-          column(6, uiOutput("year_options"))
+          column(6, selectizeInput(inputId = 'commodity_selection', label = 'Commodity', 
+                                   choices = commodities$commodity, selected = commodities$commodity[0])),
+          column(6, sliderInput(inputId = "year_selection", label = "Year", min = NULL, max = NULL, 
+                                value = NULL, step = 1))
         ),
         fluidRow(
-          column(6, uiOutput("flow_options"))
+          column(6, radioButtons(inputId = "flow_selection", label = "Flow:", 
+                                 choices = c("Export", "Import")))
         ),
         fluidRow(
           box(
