@@ -2,11 +2,9 @@ library(shiny)
 library(googleVis)
 library(data.table)
 
-source('./helpers.R')
-
 shinyServer(function(input, output, session){
   
-  conn <- dbConnector(dbname = './commodities.sqlite')
+  conn <- dbConnector(session, dbname = './commodities.sqlite')
   
   trade <- reactive({
     commodity_id = commodities[commodity == input$commodity_selection]$id
@@ -19,8 +17,9 @@ shinyServer(function(input, output, session){
   })
   
   countries <- reactive({
-    data_trade <- trade()
-    data_trade[year == input$year_selection & commodity == input$commodity_selection & flow == input$flow_selection]
+    commodity_id = commodities[commodity == input$commodity_selection]$id
+    data_trade <- dbGetData(conn, commodity_id)
+    data_trade
   }) 
   
   output$world_map <- renderGvis({
