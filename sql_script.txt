@@ -4,18 +4,21 @@ sqlite3
 .open commodities.sqlite
 
 BEGIN TRANSACTION;
-CREATE TABLE commodity
-(
-  id INTEGER NOT NULL,
-  commodity TEXT NOT NULL,
-  CONSTRAINT PK_Commodity PRIMARY KEY (id)
-);
 
 CREATE TABLE category
 (
   id INTEGER NOT NULL,
   category TEXT NOT NULL,
   CONSTRAINT PK_Category PRIMARY KEY (id)
+);
+
+CREATE TABLE commodity
+(
+  id INTEGER NOT NULL,
+  commodity TEXT NOT NULL,
+  category_id INT NOT NULL,
+  CONSTRAINT PK_Commodity PRIMARY KEY (id),
+  CONSTRAINT FK_Commodity_Category FOREIGN KEY (category_id) REFERENCES category(id)
 );
 
 CREATE TABLE trade
@@ -25,9 +28,7 @@ CREATE TABLE trade
   flow TEXT,
   trade_usd INTEGER,
   commodity_id INTEGER,
-  category_id INTEGER,
-  CONSTRAINT FK_Trade_Commodity FOREIGN KEY (commodity_id) REFERENCES commodity(id),
-  CONSTRAINT FK_Trade_Category FOREIGN KEY (category_id) REFERENCES category(id)
+  CONSTRAINT FK_Trade_Commodity FOREIGN KEY (commodity_id) REFERENCES commodity(id)
 );
 PRAGMA foreign_keys = ON;
 COMMIT;
