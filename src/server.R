@@ -19,7 +19,7 @@ shinyServer(function(input, output, session){
   countries <- reactive({
     commodity_id = commodities[commodity == input$commodity_selection]$id
     data_trade <- dbGetData(conn, commodity_id)
-    data_trade
+    data_trade[year == input$year_selection & flow == input$flow_selection]
   }) 
   
   output$world_map <- renderGvis({
