@@ -3,7 +3,7 @@ library(data.table)
 library(dplyr)
 
 
-csvpath = "./commodity_trade_statistics_data.csv"
+csvpath = "../../commodity_trade_statistics_data.csv"
 dbname = "./commodities.sqlite"
 tblname = "trade"
 tblname2 = "commodity"
@@ -13,6 +13,9 @@ tblname3 = "category"
 data <- fread(input = csvpath,
               sep = ",",
               header = TRUE)
+
+duplicated_data = duplicated(data[,.(country_or_area, year, commodity, flow)])
+data = data[!duplicated_data]
 
 # select the unique values of commodity to create an id for each one
 category = unique(data$category)
