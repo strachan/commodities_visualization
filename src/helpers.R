@@ -71,17 +71,19 @@ dbGetDataByCommodity <- function(conn, commodity_id) {
                            statement = query))
 }
 
-dbGetDataByCategory <- function(conn, category_id) {
-  require(data.table)
-  # query to select all data filtering by category
-  query <- paste('SELECT trade.* FROM trade',
-                 'JOIN commodity ON trade.commodity_id = commodity.id',
-                 'JOIN category ON commodity.category_id = category.id',
-                 'WHERE category.id =',
-                 category_id)
-  as.data.table(dbGetQuery(conn = conn,
-                           statement = query))
-}
+# dbGetDataByCountryAndCategory <- function(conn, country, category_id) {
+#   require(data.table)
+#   # query to select all data filtering by category
+#   query <- paste('SELECT trade.* FROM trade',
+#                  'JOIN commodity ON trade.commodity_id = commodity.id',
+#                  'JOIN category ON commodity.category_id = category.id',
+#                  'WHERE category.id =',
+#                  category_id,
+#                  "AND trade.country_or_area ='",
+#                   country,"'")
+#   as.data.table(dbGetQuery(conn = conn,
+#                            statement = query))
+# }
 
 dbGetDataByCountry <- function(conn, country) {
   require(data.table)

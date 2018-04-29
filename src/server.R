@@ -36,12 +36,6 @@ shinyServer(function(input, output, session){
     trade_data[year == input$year_selection & flow == input$flow_selection]
   }) 
   
-  # trade_by_category <- reactive({
-  #   category_id <- categories[category == input$category_selection]$id
-  #   trade_data <- dbGetDataByCategory(conn, category_id)
-  #   trade_data[year == input$year_selection & flow == input$flow_selection]
-  # })
-  
   trade_by_country <- reactive({
     trade_data <- dbGetDataByCountry(conn, input$country_selection)
     
@@ -59,6 +53,12 @@ shinyServer(function(input, output, session){
                  flow == input$flow_selection_bar]
   })
   
+  # trade_by_category <- reactive({
+  #   category_id <- categories[category == input$category_selection_bar]$id
+  #   trade_data <- dbGetDataByCountryAndCategory(conn, input$country_selection, category_id)
+  #   trade_data[year == input$year_selection & flow == input$flow_selection]
+  # })
+  
   output$world_map <- renderGvis({
     data_countries <- countries()
     color <- paste0('{values:[',min(data_countries$trade_usd),',0,',max(data_countries$trade_usd),"],colors:['red', 'white', 'green']}")
@@ -71,7 +71,12 @@ shinyServer(function(input, output, session){
   })
   
   output$category_sum <- renderPlot({
-    commodity_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
-    ggplot(data = commodity_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + geom_bar(stat = 'identity')
+    category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
+    ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + geom_bar(stat = 'identity')
+  })
+  
+  output$commodities_bar <- renderPlot({
+    commodity_data = trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + geom_bar(stat = 'identity')
   })
 })
