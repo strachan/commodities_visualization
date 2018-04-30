@@ -107,7 +107,6 @@ dbGetDataByCountryAndCommodities <- function(conn, countries, commodity_id_1, co
                   "AND commodity.id IN (",
                   commodity_id_1, ",",
                   commodity_id_2, ")")
-  print(query)
   as.data.table(dbGetQuery(conn = conn,
                            statement = query))
 }
