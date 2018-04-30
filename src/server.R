@@ -49,7 +49,6 @@ shinyServer(function(input, output, session){
     }
     
     trade_data[category != 'all_commodities' & 
-                 year == input$year_selection_bar & 
                  flow == input$flow_selection_bar]
   })
   
@@ -58,6 +57,13 @@ shinyServer(function(input, output, session){
   #   trade_data <- dbGetDataByCountryAndCategory(conn, input$country_selection, category_id)
   #   trade_data[year == input$year_selection & flow == input$flow_selection]
   # })
+  
+  trade_by_all <- reactive({
+    commodity_id_1 <- commodities[commodity == input$commodity_1_selection_corr]$id
+    commodity_id_2 <- commodities[commodity == input$commodity_2_selection_corr]$id
+    countries <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
+    dbGetDataByCountryAndCommodities(conn, countries, commodity_id_1, commodity_id_2)
+  })
   
   output$world_map <- renderGvis({
     data_countries <- countries()
@@ -78,5 +84,18 @@ shinyServer(function(input, output, session){
   output$commodities_bar <- renderPlot({
     commodity_data = trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + geom_bar(stat = 'identity')
+  })
+  
+  output$corr_graph <- renderGvis({
+    #if (input$)
+    data <- trade_by_all()[year == input$year_selection_corr & flow == input$flow_selection_corr] %>% 
+      select(-commodity_id) %>%
+      mutate(trade_usd = as.numeric(trade_usd)) %>% 
+      spread(commodity, trade_usd, fill = 0)
+    gvisBubbleChart(data = data, idvar = 'country_or_area', xvar = input$commodity_1_selection_corr,
+                    yvar = input$commodity_2_selection_corr, colorvar = 'country_or_area',
+                    options = list(hAxis ="{viewWindowMode:'pretty'}",
+                                   vAxis = "{viewWindowMode:'pretty'}",
+                                   height = "400px"))
   })
 })

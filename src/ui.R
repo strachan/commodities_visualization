@@ -6,7 +6,8 @@ shinyUI(dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem('Map', tabName = 'map', icon = icon('map')),
-      menuItem('Bar Graph', tabName = 'bar_graph', icon = icon('bar-chart-o'))
+      menuItem('Bar Graph', tabName = 'bar_graph', icon = icon('bar-chart-o')),
+      menuItem('Correlation', tabName = 'corr_graph', icon = icon('line-chart', lib = 'font-awesome'))
     )
   ),
   dashboardBody(
@@ -57,6 +58,45 @@ shinyUI(dashboardPage(
         ),
         fluidRow(
           column(12, plotOutput('commodities_bar'))
+        )
+      ),
+      tabItem(tabName = 'corr_graph',
+        fluidRow(
+          column(6,
+            fluidRow(
+              column(6,  
+                fluidRow(
+                  column(12, selectizeInput(inputId = 'category_1_selection_corr', label = 'Category 1',
+                                        choices = categories$category))),
+                fluidRow(
+                  column(12, selectizeInput(inputId = 'commodity_1_selection_corr', label = 'Commodity 1',
+                                        choices = commodities$commodity)))),
+              column(6, sliderInput(inputId = "year_selection_corr", label = "Year", min = min(years$year), max = max(years$year), 
+                                    value = max(years$year), step = 1, animate = T))
+            ),
+            fluidRow(
+              column(6, 
+                fluidRow(
+                  column(12, selectizeInput(inputId = 'category_2_selection_corr', label = 'Category 2',
+                                        choices = categories$category))),
+                fluidRow(
+                  column(12, selectizeInput(inputId = 'commodity_2_selection_corr', label = 'Commodity 2',
+                                           choices = commodities$commodity))  
+                )),
+              column(6, radioButtons(inputId = "flow_selection_corr", label = "Flow:", 
+                                     choices = c('Export', 'Import')))
+            )
+          ),
+          column(6, 
+            fluidRow(
+              box(title = 'Country', width = 'auto', tags$div(style = 'height:250px; overflow: auto;',
+                                              checkboxGroupInput(inputId = 'country_selection_corr', label = NULL,
+                                                                 choices = countries$country_or_area)))
+            )
+          )
+        ),
+        fluidRow(
+          column(12, htmlOutput('corr_graph'))
         )
       )
     )
