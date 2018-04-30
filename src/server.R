@@ -58,13 +58,6 @@ shinyServer(function(input, output, session){
   #   trade_data[year == input$year_selection & flow == input$flow_selection]
   # })
   
-  trade_by_all <- reactive({
-    commodity_id_1 <- commodities[commodity == input$commodity_1_selection_corr]$id
-    commodity_id_2 <- commodities[commodity == input$commodity_2_selection_corr]$id
-    countries <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
-    dbGetDataByCountryAndCommodities(conn, countries, commodity_id_1, commodity_id_2)
-  })
-  
   output$world_map <- renderGvis({
     data_countries <- countries()
     color <- paste0('{values:[',min(data_countries$trade_usd),',0,',max(data_countries$trade_usd),"],colors:['red', 'white', 'green']}")
@@ -86,8 +79,31 @@ shinyServer(function(input, output, session){
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + geom_bar(stat = 'identity')
   })
   
+  ### code for the correlation tab ####
+  
+  trade_by_all <- reactive({
+    commodity_id_1 <- commodities[commodity == input$commodity_1_selection_corr]$id
+    commodity_id_2 <- commodities[commodity == input$commodity_2_selection_corr]$id
+    countries <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
+    dbGetDataByCountryAndCommodities(conn, countries, commodity_id_1, commodity_id_2)
+  })
+  
+  observeEvent(input$category_1_selection_corr, {
+    category_id_selected <- categories[category == input$category_1_selection_corr]$id
+    commodities_to_select <- commodities[category_id == category_id_selected]$commodity
+    updateSelectInput(session, inputId = 'commodity_1_selection_corr', choices = commodities_to_select)
+  })
+  
+  observeEvent(input$category_2_selection_corr, {
+    category_id_selected <- categories[category == input$category_2_selection_corr]$id
+    commodities_to_select <- commodities[category_id == category_id_selected]$commodity
+    updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = commodities_to_select)
+  })
+  
   output$corr_graph <- renderGvis({
-    #if (input$)
+    if (length(input$country_selection_corr) < 2) {
+      return(gvisTable(data.frame(Warning = c('Select at least two countries'))))
+    }
     data <- trade_by_all()[year == input$year_selection_corr & flow == input$flow_selection_corr] %>% 
       select(-commodity_id) %>%
       mutate(trade_usd = as.numeric(trade_usd)) %>% 
