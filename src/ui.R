@@ -54,7 +54,7 @@ shinyUI(dashboardPage(
           column(9, selectizeInput(inputId = 'category_selection_bar', label = 'Category',
                                    choices = categories$category)),
           column(3, selectizeInput(inputId = 'number_commodities_selection', label = 'N Top Commodities',
-                                   choices = 1:10, selected = 5))
+                                   choices = NULL, selected = NULL))
         ),
         fluidRow(
           column(12, plotOutput('commodities_bar'))

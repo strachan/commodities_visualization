@@ -35,6 +35,19 @@ shinyServer(function(input, output, session){
     }
     trade_data[year == input$year_selection & flow == input$flow_selection]
   }) 
+
+  output$world_map <- renderGvis({
+    data_countries <- countries()
+    color <- paste0('{values:[',min(data_countries$trade_usd),',0,',max(data_countries$trade_usd),"],colors:['red', 'white', 'green']}")
+    gvisGeoChart(data = data_countries, locationvar = "country_or_area", colorvar = 'trade_usd',
+                 options=list(region="world", displayMode="regions", 
+                              resolution="countries",
+                              width="auto", height="auto", colorAxis = ifelse(input$flow_selection == 'Balance', color, 
+                                                                              ifelse(input$flow_selection == 'Export', 
+                                                                                     "colors:['green']", "colors:['red']"))))
+  })
+  
+  #### code for the bar graph ####
   
   trade_by_country <- reactive({
     trade_data <- dbGetDataByCountry(conn, input$country_selection)
@@ -49,55 +62,89 @@ shinyServer(function(input, output, session){
     }
     
     trade_data[category != 'all_commodities' & 
-                 flow == input$flow_selection_bar]
+                 flow == input$flow_selection_bar &
+                 year == input$year_selection_bar]
   })
   
-  # trade_by_category <- reactive({
-  #   category_id <- categories[category == input$category_selection_bar]$id
-  #   trade_data <- dbGetDataByCountryAndCategory(conn, input$country_selection, category_id)
-  #   trade_data[year == input$year_selection & flow == input$flow_selection]
-  # })
+  observeEvent(input$country_selection, {
+    selectable_categories <- sort(unique(trade_by_country()[, category]))
+    updateSelectInput(session, inputId = 'category_selection_bar', choices = selectable_categories)
+  })
   
-  output$world_map <- renderGvis({
-    data_countries <- countries()
-    color <- paste0('{values:[',min(data_countries$trade_usd),',0,',max(data_countries$trade_usd),"],colors:['red', 'white', 'green']}")
-    gvisGeoChart(data = data_countries, locationvar = "country_or_area", colorvar = 'trade_usd',
-                 options=list(region="world", displayMode="regions", 
-                              resolution="countries",
-                              width="auto", height="auto", colorAxis = ifelse(input$flow_selection == 'Balance', color, 
-                                                                              ifelse(input$flow_selection == 'Export', 
-                                                                                     "colors:['green']", "colors:['red']"))))
+  observeEvent(input$category_selection_bar, {
+    number_of_commodities <- length(unique(trade_by_country()[category == input$category_selection_bar, commodity]))
+    print(number_of_commodities)
+    number_of_commodities_options <- ifelse(number_of_commodities < 10,
+                                            data.frame(1:number_of_commodities),
+                                            data.frame(1:10))
+    updateSelectInput(session, inputId = 'number_commodities_selection', 
+                      choices = number_of_commodities_options[[1]], 
+                      selected = max(number_of_commodities_options[[1]]))
   })
   
   output$category_sum <- renderPlot({
     category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
-    ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + geom_bar(stat = 'identity')
+    ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
+      geom_bar(stat = 'identity') + xlab('Categories') + ylab('Trade in US$ (x 1MM)')
   })
   
   output$commodities_bar <- renderPlot({
     commodity_data = trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
-    ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + geom_bar(stat = 'identity')
+    ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + 
+      geom_bar(stat = 'identity') + xlab('Commodities') + ylab('Trade in US$')
   })
   
-  ### code for the correlation tab ####
+  #### code for the correlation tab ####
   
   trade_by_all <- reactive({
     commodity_id_1 <- commodities[commodity == input$commodity_1_selection_corr]$id
     commodity_id_2 <- commodities[commodity == input$commodity_2_selection_corr]$id
-    countries <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
-    dbGetDataByCountryAndCommodities(conn, countries, commodity_id_1, commodity_id_2)
+    country_names <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
+    dbGetDataByCountryAndCommodities(conn, country_names, commodity_id_1, commodity_id_2)
+  })
+  
+  trade_by_countries <- reactive({
+    country_names <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
+    dbGetDataByCountryList(conn, country_names)
+  })
+  
+  # this observe event will update the categories and commodities
+  # whenever a country is selected to ensure that it has data to plot
+  observeEvent(input$country_selection_corr, {
+    filtered_categories <- trade_by_countries()[flow == input$flow_selection_corr & year == input$year_selection_corr,
+                                                .N, by=.(category, country_or_area)][,.N, by=category][N >= length(input$country_selection_corr), 
+                                                                                     category]
+    selectable_categories <- unique(filtered_categories)
+    updateSelectInput(session, inputId = 'category_1_selection_corr', choices = selectable_categories)
+    updateSelectInput(session, inputId = 'category_2_selection_corr', choices = selectable_categories)
   })
   
   observeEvent(input$category_1_selection_corr, {
     category_id_selected <- categories[category == input$category_1_selection_corr]$id
     commodities_to_select <- commodities[category_id == category_id_selected]$commodity
-    updateSelectInput(session, inputId = 'commodity_1_selection_corr', choices = commodities_to_select)
+    filtered_data <- trade_by_countries() 
+    unique_commodities <- unique(filtered_data[category == input$category_1_selection_corr & 
+                                                 year == input$year_selection_corr & 
+                                                 flow == input$flow_selection_corr, 
+                                               .N, by=.(commodity, country_or_area)][,.N,by=commodity][N >= length(input$country_selection_corr), 
+                                                                    commodity])
+    selectable_commodities <- ifelse(nrow(filtered_data) > 0, 
+                                     unique_commodities,
+                                     commodities_to_select)
+    updateSelectInput(session, inputId = 'commodity_1_selection_corr', choices = selectable_commodities)
   })
   
   observeEvent(input$category_2_selection_corr, {
     category_id_selected <- categories[category == input$category_2_selection_corr]$id
     commodities_to_select <- commodities[category_id == category_id_selected]$commodity
-    updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = commodities_to_select)
+    filtered_data <- trade_by_countries() 
+    unique_commodities <- unique(filtered_data[category == input$category_2_selection_corr, 
+                                               .N, by=.(commodity, country_or_area)][,.N,by=commodity][N >= length(input$country_selection_corr), 
+                                                                                commodity])
+    selectable_commodities <- ifelse(nrow(filtered_data) > 0, 
+                                     unique_commodities,
+                                     commodities_to_select)
+    updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = selectable_commodities)
   })
   
   output$corr_graph <- renderGvis({

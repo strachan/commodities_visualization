@@ -97,6 +97,18 @@ dbGetDataByCountry <- function(conn, country) {
                            statement = query))
 }
 
+dbGetDataByCountryList <- function(conn, country_names) {
+  require(data.table)
+  # query to select all data filtering by countries
+  query <- paste0('SELECT trade.*, commodity.commodity, category.category FROM trade ',
+                  'JOIN commodity ON trade.commodity_id = commodity.id ',
+                  'JOIN category ON commodity.category_id = category.id ',
+                  "WHERE trade.country_or_area IN (",
+                  country_names,")")
+  as.data.table(dbGetQuery(conn = conn,
+                           statement = query))
+}
+
 dbGetDataByCountryAndCommodities <- function(conn, countries, commodity_id_1, commodity_id_2) {
   require(data.table)
   # query to select all data filtering country and commodities
