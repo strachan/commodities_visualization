@@ -1,5 +1,6 @@
 library(shiny)
 library(shinydashboard)
+library(dygraphs)
 
 shinyUI(dashboardPage(
   dashboardHeader(title = 'Commodities'),
@@ -103,6 +104,9 @@ shinyUI(dashboardPage(
         ),
         fluidRow(
           column(12, htmlOutput('corr_graph'))
+        ),
+        fluidRow(
+          column(12, dygraphOutput('dygraph'))
         )
       )
     )

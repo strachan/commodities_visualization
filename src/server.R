@@ -4,6 +4,7 @@ library(googleVis)
 library(data.table)
 library(tidyr)
 library(dplyr)
+library(dygraphs)
 
 shinyServer(function(input, output, session){
   
@@ -169,16 +170,33 @@ shinyServer(function(input, output, session){
   
   output$corr_graph <- renderGvis({
     if (length(input$country_selection_corr) < 2) {
-      return(gvisTable(data.frame(Warning = c('Select at least two countries'))))
+      return(NULL)
     }
     data <- trade_by_all()[year == input$year_selection_corr & flow == input$flow_selection_corr] %>% 
       select(-commodity_id) %>%
       mutate(trade_usd = as.numeric(trade_usd)) %>% 
       spread(commodity, trade_usd, fill = 0)
+    data2 <- trade_by_all()[flow == input$flow_selection_corr]
+    max_commodity_1 = max(data2[commodity == input$commodity_1_selection_corr, trade_usd])
+    max_commodity_2 = max(data2[commodity == input$commodity_2_selection_corr, trade_usd])
     gvisBubbleChart(data = data, idvar = 'country_or_area', xvar = input$commodity_1_selection_corr,
                     yvar = input$commodity_2_selection_corr, colorvar = 'country_or_area',
-                    options = list(hAxis ="{viewWindowMode:'pretty', format:'currency'}",
-                                   vAxis = "{viewWindowMode:'pretty', format:'currency'}",
+                    options = list(hAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 1.1 * max_commodity_1,"'}"),
+                                   vAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 1.1 * max_commodity_2,"'}"),
                                    height = "400px"))
+  })
+  
+  output$dygraph <- renderDygraph({
+    if (length(input$country_selection_corr) != 1) {
+      return(NULL)
+    }
+    data <- trade_by_all()[flow == input$flow_selection_corr] %>% 
+      select(-commodity_id) %>%
+      mutate(trade_usd = as.numeric(trade_usd)) %>% 
+      spread(commodity, trade_usd, fill = 0) %>%
+      select(year, everything())
+    data$year = as.Date(paste(data$year, 1, 1, sep = "-"))
+    data = as.xts.data.table(as.data.table(data))
+    dygraph(data = data) %>% dyRangeSelector()
   })
 })
