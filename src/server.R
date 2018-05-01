@@ -177,8 +177,8 @@ shinyServer(function(input, output, session){
       spread(commodity, trade_usd, fill = 0)
     gvisBubbleChart(data = data, idvar = 'country_or_area', xvar = input$commodity_1_selection_corr,
                     yvar = input$commodity_2_selection_corr, colorvar = 'country_or_area',
-                    options = list(hAxis ="{viewWindowMode:'pretty'}",
-                                   vAxis = "{viewWindowMode:'pretty'}",
+                    options = list(hAxis ="{viewWindowMode:'pretty', format:'currency'}",
+                                   vAxis = "{viewWindowMode:'pretty', format:'currency'}",
                                    height = "400px"))
   })
 })
