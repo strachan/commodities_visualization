@@ -93,7 +93,7 @@ shinyServer(function(input, output, session){
     category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
     categories_plotted <- right_join(categories, category_data)
     ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
-      geom_bar(stat = 'identity') + ylab('Trade in US$ (x 1MM)') + 
+      geom_bar(stat = 'identity', fill = '#609040') + ylab('Trade in US$ (x 1MM)') + 
       theme(axis.text=element_text(size=30), axis.title=element_text(size=15,face="bold"),
             axis.text.x = element_text(size = 30)) + theme_bw() +
       scale_x_discrete('Categories', labels = categories_plotted$id) 
@@ -109,7 +109,7 @@ shinyServer(function(input, output, session){
     commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
     commodities_plotted <- right_join(commodities, commodity_data)
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + 
-      geom_bar(stat = 'identity') + xlab('Commodities') + ylab('Trade in US$') +
+      geom_bar(stat = 'identity', fill = '#609040') + xlab('Commodities') + ylab('Trade in US$') +
       theme(axis.text=element_text(size=30), axis.title=element_text(size=15,face="bold"),
             axis.text.x = element_text(size = 30)) + theme_bw() +
       scale_x_discrete('Commodities', labels = commodities_plotted$id)
@@ -135,7 +135,7 @@ shinyServer(function(input, output, session){
     filtered_categories <- trade_by_countries()[flow == input$flow_selection_corr & year == input$year_selection_corr,
                                                 .N, by=.(category, country_or_area)][,.N, by=category][N >= length(input$country_selection_corr), 
                                                                                      category]
-    selectable_categories <- unique(filtered_categories)
+    selectable_categories <- sort(unique(filtered_categories))
     updateSelectInput(session, inputId = 'category_1_selection_corr', choices = selectable_categories)
     updateSelectInput(session, inputId = 'category_2_selection_corr', choices = selectable_categories)
   })
@@ -150,22 +150,22 @@ shinyServer(function(input, output, session){
                                                .N, by=.(commodity, country_or_area)][,.N,by=commodity][N >= length(input$country_selection_corr), 
                                                                     commodity])
     selectable_commodities <- ifelse(nrow(filtered_data) > 0, 
-                                     unique_commodities,
-                                     commodities_to_select)
-    updateSelectInput(session, inputId = 'commodity_1_selection_corr', choices = selectable_commodities)
+                                     data.frame(unique_commodities),
+                                     data.frame(commodities_to_select))
+    updateSelectInput(session, inputId = 'commodity_1_selection_corr', choices = selectable_commodities[[1]])
   })
   
   observeEvent(input$category_2_selection_corr, {
     category_id_selected <- categories[category == input$category_2_selection_corr]$id
     commodities_to_select <- commodities[category_id == category_id_selected]$commodity
-    filtered_data <- trade_by_countries() 
+    filtered_data <- trade_by_countries()
     unique_commodities <- unique(filtered_data[category == input$category_2_selection_corr, 
                                                .N, by=.(commodity, country_or_area)][,.N,by=commodity][N >= length(input$country_selection_corr), 
                                                                                 commodity])
     selectable_commodities <- ifelse(nrow(filtered_data) > 0, 
-                                     unique_commodities,
-                                     commodities_to_select)
-    updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = selectable_commodities)
+                                     data.frame(unique_commodities),
+                                     data.frame(commodities_to_select))
+    updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = selectable_commodities[[1]])
   })
   
   output$corr_graph <- renderGvis({
@@ -181,8 +181,12 @@ shinyServer(function(input, output, session){
     max_commodity_2 = max(data2[commodity == input$commodity_2_selection_corr, trade_usd])
     gvisBubbleChart(data = data, idvar = 'country_or_area', xvar = input$commodity_1_selection_corr,
                     yvar = input$commodity_2_selection_corr, colorvar = 'country_or_area',
-                    options = list(hAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 1.1 * max_commodity_1,"'}"),
-                                   vAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 1.1 * max_commodity_2,"'}"),
+                    options = list(hAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
+                                                 1.1 * max_commodity_1,"', title:'", 
+                                                 input$commodity_1_selection_corr, "'}"),
+                                   vAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
+                                                 1.1 * max_commodity_2,"', title:'", 
+                                                 input$commodity_2_selection_corr, "'}"),
                                    height = "400px"))
   })
   

@@ -2,9 +2,11 @@ library(shiny)
 library(shinydashboard)
 library(dygraphs)
 
-shinyUI(dashboardPage(
+shinyUI(dashboardPage(skin = 'green',
   dashboardHeader(title = 'Commodities'),
   dashboardSidebar(
+    sidebarUserPanel("Guilherme Strachan",
+                     image = "https://yt3.ggpht.com/-04uuTMHfDz4/AAAAAAAAAAI/AAAAAAAAAAA/Kjeupp-eNNg/s100-c-k-no-rj-c0xffffff/photo.jpg"),
     sidebarMenu(
       menuItem('Map', tabName = 'map', icon = icon('map')),
       menuItem('Bar Graph', tabName = 'bar_graph', icon = icon('bar-chart-o')),
@@ -12,6 +14,10 @@ shinyUI(dashboardPage(
     )
   ),
   dashboardBody(
+    # Include the custom styling
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+    ),
     tabItems(
       # Map tab content
       tabItem(tabName = 'map',

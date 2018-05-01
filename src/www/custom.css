@@ -1,0 +1,44 @@
+.main-header .logo {
+  font-family: "Georgia", Times, "Times New Roman", serif;
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.js-irs-0 .irs-bar {
+  border-top-color: #609040;
+  border-bottom-color: #609040;
+} 
+
+.js-irs-1 .irs-bar {
+  border-top-color: #609040;
+  border-bottom-color: #609040;
+}
+
+.js-irs-2 .irs-bar {
+  border-top-color: #609040;
+  border-bottom-color: #609040;
+}
+
+.js-irs-0 .irs-bar-edge {
+  border-color: #609040;
+}
+
+.js-irs-1 .irs-bar-edge {
+  border-color: #609040;
+}
+
+.js-irs-2 .irs-bar-edge {
+  border-color: #609040;
+}
+
+.js-irs-0 .irs-single, .js-irs-0 .irs-bar-edge, .js-irs-0 .irs-bar {
+  background: #609040;
+}
+
+.js-irs-1 .irs-single, .js-irs-1 .irs-bar-edge, .js-irs-1 .irs-bar {
+  background: #609040;
+}
+
+.js-irs-2 .irs-single, .js-irs-2 .irs-bar-edge, .js-irs-2 .irs-bar {
+  background: #609040;
+}
