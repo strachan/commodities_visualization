@@ -4,6 +4,18 @@
   font-size: 24px;
 }
 
+.content {
+  background-color: #e6e6e6;
+}
+
+.bg-aqua {
+  background-color: #609040!important; 
+}
+
+.info-box .info-box-content .info-box-text {
+  color:#000;
+}
+
 .js-irs-0 .irs-bar {
   border-top-color: #609040;
   border-bottom-color: #609040;
