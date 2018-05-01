@@ -73,7 +73,6 @@ shinyServer(function(input, output, session){
   
   observeEvent(input$category_selection_bar, {
     number_of_commodities <- length(unique(trade_by_country()[category == input$category_selection_bar, commodity]))
-    print(number_of_commodities)
     number_of_commodities_options <- ifelse(number_of_commodities < 10,
                                             data.frame(1:number_of_commodities),
                                             data.frame(1:10))
@@ -85,13 +84,15 @@ shinyServer(function(input, output, session){
   output$category_sum <- renderPlot({
     category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
     ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
-      geom_bar(stat = 'identity') + xlab('Categories') + ylab('Trade in US$ (x 1MM)')
+      geom_bar(stat = 'identity') + xlab('Categories') + ylab('Trade in US$ (x 1MM)') + 
+      theme(axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"))
   })
   
   output$commodities_bar <- renderPlot({
     commodity_data = trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + 
-      geom_bar(stat = 'identity') + xlab('Commodities') + ylab('Trade in US$')
+      geom_bar(stat = 'identity') + xlab('Commodities') + ylab('Trade in US$') +
+      theme(axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"))
   })
   
   #### code for the correlation tab ####

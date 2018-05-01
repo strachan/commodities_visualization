@@ -52,7 +52,7 @@ shinyUI(dashboardPage(
         ),
         fluidRow(
           column(9, selectizeInput(inputId = 'category_selection_bar', label = 'Category',
-                                   choices = categories$category)),
+                                   choices = categories$category, width = '100%')),
           column(3, selectizeInput(inputId = 'number_commodities_selection', label = 'N Top Commodities',
                                    choices = NULL, selected = NULL))
         ),
@@ -67,10 +67,10 @@ shinyUI(dashboardPage(
               column(6,  
                 fluidRow(
                   column(12, selectizeInput(inputId = 'category_1_selection_corr', label = 'Category 1',
-                                        choices = categories$category))),
+                                        choices = categories$category, width = '100%'))),
                 fluidRow(
                   column(12, selectizeInput(inputId = 'commodity_1_selection_corr', label = 'Commodity 1',
-                                        choices = commodities$commodity)))),
+                                        choices = commodities$commodity, width = '100%')))),
               column(6, sliderInput(inputId = "year_selection_corr", label = "Year", min = min(years$year), max = max(years$year), 
                                     value = max(years$year), step = 1, animate = T))
             ),
@@ -78,10 +78,10 @@ shinyUI(dashboardPage(
               column(6, 
                 fluidRow(
                   column(12, selectizeInput(inputId = 'category_2_selection_corr', label = 'Category 2',
-                                        choices = categories$category))),
+                                        choices = categories$category, width = '100%'))),
                 fluidRow(
                   column(12, selectizeInput(inputId = 'commodity_2_selection_corr', label = 'Commodity 2',
-                                           choices = commodities$commodity))  
+                                           choices = commodities$commodity, width = '100%'))  
                 )),
               column(6, radioButtons(inputId = "flow_selection_corr", label = "Flow:", 
                                      choices = c('Export', 'Import')))
