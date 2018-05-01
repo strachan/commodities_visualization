@@ -81,18 +81,37 @@ shinyServer(function(input, output, session){
                       selected = max(number_of_commodities_options[[1]]))
   })
   
+  output$categories_legend <- renderTable({
+    category_data = trade_by_country()[,sum(trade_usd)/1000000, 
+                                       by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
+    categories_plotted <- right_join(categories, category_data)
+    data.table(id = categories_plotted$id, category = categories_plotted$category)
+  })
+  
   output$category_sum <- renderPlot({
     category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
+    categories_plotted <- right_join(categories, category_data)
     ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
-      geom_bar(stat = 'identity') + xlab('Categories') + ylab('Trade in US$ (x 1MM)') + 
-      theme(axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"))
+      geom_bar(stat = 'identity') + ylab('Trade in US$ (x 1MM)') + 
+      theme(axis.text=element_text(size=30), axis.title=element_text(size=15,face="bold"),
+            axis.text.x = element_text(size = 30)) + theme_bw() +
+      scale_x_discrete('Categories', labels = categories_plotted$id) 
+  })
+  
+  output$commodities_legend <- renderTable({
+    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    commodities_plotted <- right_join(commodities, commodity_data)
+    data.table(id = commodities_plotted$id, commodity = commodities_plotted$commodity)
   })
   
   output$commodities_bar <- renderPlot({
-    commodity_data = trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    commodities_plotted <- right_join(commodities, commodity_data)
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + 
       geom_bar(stat = 'identity') + xlab('Commodities') + ylab('Trade in US$') +
-      theme(axis.text=element_text(size=12), axis.title=element_text(size=14,face="bold"))
+      theme(axis.text=element_text(size=30), axis.title=element_text(size=15,face="bold"),
+            axis.text.x = element_text(size = 30)) + theme_bw() +
+      scale_x_discrete('Commodities', labels = commodities_plotted$id)
   })
   
   #### code for the correlation tab ####

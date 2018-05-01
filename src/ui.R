@@ -51,6 +51,9 @@ shinyUI(dashboardPage(
           column(12, plotOutput('category_sum'))
         ),
         fluidRow(
+          column(12, tableOutput('categories_legend'))
+        ),
+        fluidRow(
           column(9, selectizeInput(inputId = 'category_selection_bar', label = 'Category',
                                    choices = categories$category, width = '100%')),
           column(3, selectizeInput(inputId = 'number_commodities_selection', label = 'N Top Commodities',
@@ -58,6 +61,9 @@ shinyUI(dashboardPage(
         ),
         fluidRow(
           column(12, plotOutput('commodities_bar'))
+        ),
+        fluidRow(
+          column(12, tableOutput('commodities_legend'))
         )
       ),
       tabItem(tabName = 'corr_graph',
