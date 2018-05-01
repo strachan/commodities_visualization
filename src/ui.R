@@ -22,18 +22,18 @@ shinyUI(dashboardPage(skin = 'green',
       # Map tab content
       tabItem(tabName = 'map',
         fluidRow(
-          column(9, selectizeInput(inputId = 'category_selection', label = 'Category',
+          column(9, selectizeInput(inputId = 'category_selection_map', label = 'Category',
                                    choices = categories$category, width = '100%'))
         ),
         fluidRow(
-          column(9, selectizeInput(inputId = 'commodity_selection', label = 'Commodity', 
+          column(9, selectizeInput(inputId = 'commodity_selection_map', label = 'Commodity', 
                                    choices = commodities$commodity, width = '100%'))
         ),
         fluidRow(
-          column(6, radioButtons(inputId = "flow_selection", label = "Flow:", 
+          column(6, radioButtons(inputId = "flow_selection_map", label = "Flow:", 
                                  choices = flow_types)),
           
-          column(6, sliderInput(inputId = "year_selection", label = "Year", min = 2016, max = 2016, 
+          column(6, sliderInput(inputId = "year_selection_map", label = "Year", min = 2016, max = 2016, 
                                 value = 2016, step = 1))
         ),
         fluidRow(

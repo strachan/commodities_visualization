@@ -12,42 +12,79 @@ shinyServer(function(input, output, session){
   
   #### code for the map graph ####
   
-  trade <- reactive({
-    commodity_id = commodities[commodity == input$commodity_selection]$id
+  getCommodityId <- function(commodity_name) {
+    commodities[commodity == commodity_name]$id
+  }
+  
+  getCategoryId <- function(category_name) {
+    categories[category == category_name]$id
+  }
+  
+  getCommoditiesByCategory <- function(category_name) {
+    commodities[category_id == getCategoryId(category_name)]$commodity
+  }
+  
+  trade_by_commodity <- reactive({
+    commodity_id = getCommodityId(input$commodity_selection_map)
     dbGetDataByCommodity(conn, commodity_id)
   })  
   
-  observeEvent(input$category_selection, {
-    commodities_to_select <- commodities[category_id == categories[category == input$category_selection]$id]$commodity
-    updateSelectInput(session, inputId = 'commodity_selection', choices = commodities_to_select)
+  # updates commodity list according to category selected
+  observeEvent(input$category_selection_map, {
+    commodities_to_select <- getCommoditiesByCategory(input$category_selection_map)
+    updateSelectInput(session, inputId = 'commodity_selection_map', choices = commodities_to_select)
   })
   
-  observeEvent(input$commodity_selection, {
-    years <- unique(trade()$year)
-    updateSliderInput(session, inputId = 'year_selection', value = max(years), min = min(years), max = max(years))
+  # updates year range according to commodity selected
+  observeEvent(input$commodity_selection_map, {
+    years <- unique(trade_by_commodity()$year)
+    updateSliderInput(session, inputId = 'year_selection_map', value = max(years), min = min(years), max = max(years))
   })
   
-  countries <- reactive({
-    commodity_id = commodities[commodity == input$commodity_selection]$id
+  # function to calculate the difference between Export and Import trade values
+  calculateBalanceTrade <- function(data) {
+    data[year == input$year_selection_map] %>% 
+      mutate(trade_usd = as.numeric(trade_usd)) %>% spread(flow, trade_usd, fill = 0) %>%
+      mutate(trade_usd = Export - Import)
+  }
+  
+  # reactive function to get the data according to the inputs selected
+  # for the world map graph
+  countries_trade <- reactive({
+    commodity_id = getCommodityId(input$commodity_selection_map)
     trade_data <- dbGetDataByCommodity(conn, commodity_id)
-    if (input$flow_selection == 'Balance') {
-      trade_usd_balance = trade_data[year == input$year_selection] %>% 
-        mutate(trade_usd = as.numeric(trade_usd)) %>% spread(flow, trade_usd, fill = 0) %>%
-        mutate(trade_usd = Export - Import)
-      return(trade_usd_balance)
+    
+    # when Balance flow is selected we must calculate the difference
+    # between export and import
+    if (input$flow_selection_map == 'Balance') {
+      return(calculateBalanceTrade(trade_data))
     }
-    trade_data[year == input$year_selection & flow == input$flow_selection]
+    
+    trade_data[year == input$year_selection_map & flow == input$flow_selection_map]
   }) 
 
+  getMapChartOptions <- function(min_value, max_value) {
+    
+    # color variable for balance flow
+    color <- paste0('{values:[',min_value, ',0,',
+                    max_value, "],colors:['red', 'white', 'green']}")
+    
+    # choose the color depending on the flow selected
+    color_axis <- ifelse(input$flow_selection_map == 'Balance', 
+                         color, 
+                         "colors:['green']")
+    
+    list(region="world", displayMode="regions", resolution="countries",
+         width="auto", height="auto", colorAxis = color_axis)
+  }
+  
   output$world_map <- renderGvis({
-    data_countries <- countries()
-    color <- paste0('{values:[',min(data_countries$trade_usd),',0,',max(data_countries$trade_usd),"],colors:['red', 'white', 'green']}")
-    gvisGeoChart(data = data_countries, locationvar = "country_or_area", colorvar = 'trade_usd',
-                 options=list(region="world", displayMode="regions", 
-                              resolution="countries",
-                              width="auto", height="auto", colorAxis = ifelse(input$flow_selection == 'Balance', color, 
-                                                                              ifelse(input$flow_selection == 'Export', 
-                                                                                     "colors:['green']", "colors:['red']"))))
+    countries_data <- countries_trade()
+    min_value <- min(countries_data$trade_usd)
+    max_value <- max(countries_data$trade_usd)
+    options <- getMapChartOptions(min_value, max_value)
+    gvisGeoChart(data = countries_data, locationvar = "country_or_area", 
+                 colorvar = 'trade_usd', options = options)
   })
   
   #### code for the bar graph ####
@@ -79,7 +116,6 @@ shinyServer(function(input, output, session){
     number_of_commodities_options <- ifelse(number_of_commodities < 10,
                                             number_of_commodities,
                                             10)
-    print(number_of_commodities_options)
     updateSelectInput(session, inputId = 'number_commodities_selection', 
                       choices = 1:number_of_commodities_options, 
                       selected = max(number_of_commodities_options[[1]]))
