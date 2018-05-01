@@ -10,6 +10,8 @@ shinyServer(function(input, output, session){
   
   conn <- dbConnector(session, dbname = './commodities.sqlite')
   
+  #### code for the map graph ####
+  
   trade <- reactive({
     commodity_id = commodities[commodity == input$commodity_selection]$id
     dbGetDataByCommodity(conn, commodity_id)
@@ -75,34 +77,55 @@ shinyServer(function(input, output, session){
   observeEvent(input$category_selection_bar, {
     number_of_commodities <- length(unique(trade_by_country()[category == input$category_selection_bar, commodity]))
     number_of_commodities_options <- ifelse(number_of_commodities < 10,
-                                            data.frame(1:number_of_commodities),
-                                            data.frame(1:10))
+                                            number_of_commodities,
+                                            10)
+    print(number_of_commodities_options)
     updateSelectInput(session, inputId = 'number_commodities_selection', 
-                      choices = number_of_commodities_options[[1]], 
+                      choices = 1:number_of_commodities_options, 
                       selected = max(number_of_commodities_options[[1]]))
+  })
+  
+  output$total_trade_country <- renderInfoBox({
+    total_value <- sum(trade_by_country()[, trade_usd])
+    total_value_formatted <- paste0("$", formatC(as.numeric(total_value), format="f", digits=2, big.mark=","))
+    infoBox("Total Trade (in USD)", total_value_formatted, icon = icon("calculator"))
   })
   
   output$categories_legend <- renderTable({
     category_data = trade_by_country()[,sum(trade_usd)/1000000, 
                                        by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
     categories_plotted <- right_join(categories, category_data)
-    data.table(id = categories_plotted$id, category = categories_plotted$category)
+    data.table(id = categories_plotted$id, category = categories_plotted$category, trade_usd_X1MM = categories_plotted$V1)
   })
   
   output$category_sum <- renderPlot({
-    category_data = trade_by_country()[,sum(trade_usd)/1000000,by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
+    category_data = trade_by_country()[,sum(trade_usd)/1000000,by=category][order(-V1)][1:input$number_categories_selection]
     categories_plotted <- right_join(categories, category_data)
     ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
-      geom_bar(stat = 'identity', fill = '#609040') + ylab('Trade in US$ (x 1MM)') + 
+      geom_bar(stat = 'identity', fill = '#768858') + ylab('Trade in US$ (x 1MM)') + 
       theme(axis.text=element_text(size=30), axis.title=element_text(size=15,face="bold"),
             axis.text.x = element_text(size = 30)) + theme_bw() +
-      scale_x_discrete('Categories', labels = categories_plotted$id) 
+      scale_x_discrete('Categories', labels = categories_plotted$id)
+  })
+  
+  output$categories_influence_percentage <- renderInfoBox({
+    total_value <- sum(trade_by_country()[, trade_usd])
+    category_data <- trade_by_country()[,sum(trade_usd) ,by=category][order(-V1)][1:input$number_categories_selection]
+    percentage <- sum(as.numeric(category_data[,V1])) / total_value * 100
+    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'olive')
+  })
+  
+  output$commodities_influence_percentage <- renderInfoBox({
+    total_value <- sum(trade_by_country()[, trade_usd])
+    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    percentage <- sum(as.numeric(commodity_data[,trade_usd])) / total_value * 100
+    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'green')
   })
   
   output$commodities_legend <- renderTable({
     commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
     commodities_plotted <- right_join(commodities, commodity_data)
-    data.table(id = commodities_plotted$id, commodity = commodities_plotted$commodity)
+    data.table(id = commodities_plotted$id, commodity = commodities_plotted$commodity, trade_usd = as.numeric(commodities_plotted$trade_usd))
   })
   
   output$commodities_bar <- renderPlot({

@@ -43,10 +43,11 @@ shinyUI(dashboardPage(skin = 'green',
       ),
       tabItem(tabName = 'bar_graph',
         fluidRow(
-          column(6, sliderInput(inputId = "year_selection_bar", label = "Year", min = min(years$year), max = max(years$year), 
+          column(3, sliderInput(inputId = "year_selection_bar", label = "Year", min = min(years$year), max = max(years$year), 
                                 value = max(years$year), step = 1)),
-          column(6, radioButtons(inputId = "flow_selection_bar", label = "Flow:", 
-                                 choices = flow_types))
+          column(3, radioButtons(inputId = "flow_selection_bar", label = "Flow:", 
+                                 choices = flow_types)),
+          column(6, infoBoxOutput('total_trade_country', width = 6))
         ),
         fluidRow(
           column(9, selectizeInput(inputId = 'country_selection', label = 'Country',
@@ -57,8 +58,10 @@ shinyUI(dashboardPage(skin = 'green',
         fluidRow(
           column(12, plotOutput('category_sum'))
         ),
+        br(),
         fluidRow(
-          column(12, tableOutput('categories_legend'))
+          column(6, tableOutput('categories_legend')),
+          column(6, infoBoxOutput('categories_influence_percentage', width = 6))
         ),
         fluidRow(
           column(9, selectizeInput(inputId = 'category_selection_bar', label = 'Category',
@@ -69,8 +72,10 @@ shinyUI(dashboardPage(skin = 'green',
         fluidRow(
           column(12, plotOutput('commodities_bar'))
         ),
+        br(),
         fluidRow(
-          column(12, tableOutput('commodities_legend'))
+          column(6, tableOutput('commodities_legend')),
+          column(6, infoBoxOutput('commodities_influence_percentage', width = 6))
         )
       ),
       tabItem(tabName = 'corr_graph',
