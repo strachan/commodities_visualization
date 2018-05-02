@@ -19,11 +19,11 @@ shinyServer(function(input, output, session){
       mutate(trade_usd = Export - Import)
   }
   
-  #### code for the map graph ####
-  
   getCommodityId <- function(commodity_name) {
     commodities[commodity == commodity_name]$id
   }
+  
+  #### code for the map graph ####
   
   getCategoryId <- function(category_name) {
     categories[category == category_name]$id
@@ -202,17 +202,18 @@ shinyServer(function(input, output, session){
   
   #### code for the correlation tab ####
   
-  trade_by_all <- reactive({
-    commodity_id_1 <- commodities[commodity == input$commodity_1_selection_corr]$id
-    commodity_id_2 <- commodities[commodity == input$commodity_2_selection_corr]$id
-    country_names <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
-    dbGetDataByCountryAndCommodities(conn, country_names, commodity_id_1, commodity_id_2)
-  })
-  
+  # reactive function to get new data when a new country is selected
   trade_by_countries <- reactive({
     country_names <- paste0("'", input$country_selection_corr, "'", collapse = ", ")
     dbGetDataByCountryList(conn, country_names)
   })
+  
+  # function to filter by commodities and flow selected
+  trade_filtered <- function() {
+    trade_by_countries()[(commodity == input$commodity_1_selection_corr | 
+                           commodity == input$commodity_2_selection_corr) &
+                           flow == input$flow_selection_corr]
+  }
   
   # this observe event will update the categories and commodities
   # whenever a country is selected to ensure that it has data to plot
@@ -253,37 +254,51 @@ shinyServer(function(input, output, session){
     updateSelectInput(session, inputId = 'commodity_2_selection_corr', choices = selectable_commodities[[1]])
   })
   
+  getSpreadedDataByCommodity <- function(data) {
+    data %>% 
+      select(-category, -commodity_id) %>%
+      mutate(trade_usd = as.numeric(trade_usd)) %>% 
+      spread(commodity, trade_usd, fill = 0)
+  }
+  
+  getCorrGraphOptions <- function(max_commodity_1, max_commodity_2) {
+    list(hAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
+                       1.1 * max_commodity_1,"', title:'", 
+                       input$commodity_1_selection_corr, "'}"),
+         vAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
+                       1.1 * max_commodity_2,"', title:'", 
+                       input$commodity_2_selection_corr, "'}"),
+         height = "400px")
+  }
+  
   output$corr_graph <- renderGvis({
+    # only plot the bubble graph when at least two countries are selected
     if (length(input$country_selection_corr) < 2) {
       return(NULL)
     }
-    data <- trade_by_all()[year == input$year_selection_corr & flow == input$flow_selection_corr] %>% 
-      select(-commodity_id) %>%
-      mutate(trade_usd = as.numeric(trade_usd)) %>% 
-      spread(commodity, trade_usd, fill = 0)
-    data2 <- trade_by_all()[flow == input$flow_selection_corr]
+    data <- getSpreadedDataByCommodity(trade_filtered()[year == input$year_selection_corr])
+    
+    # get the highest values for commodities selected during the range of years for axis setting
+    # this is done to maintain the same parameter for comparison during the animation
+    data2 <- trade_filtered()
     max_commodity_1 = max(data2[commodity == input$commodity_1_selection_corr, trade_usd])
     max_commodity_2 = max(data2[commodity == input$commodity_2_selection_corr, trade_usd])
+    
+    options <- getCorrGraphOptions(max_commodity_1, max_commodity_2)
+    
     gvisBubbleChart(data = data, idvar = 'country_or_area', xvar = input$commodity_1_selection_corr,
                     yvar = input$commodity_2_selection_corr, colorvar = 'country_or_area',
-                    options = list(hAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
-                                                 1.1 * max_commodity_1,"', title:'", 
-                                                 input$commodity_1_selection_corr, "'}"),
-                                   vAxis =paste0("{viewWindowMode:'pretty', format:'currency', maxValue:'", 
-                                                 1.1 * max_commodity_2,"', title:'", 
-                                                 input$commodity_2_selection_corr, "'}"),
-                                   height = "400px"))
+                    options = options)
   })
   
   output$dygraph <- renderDygraph({
+    # only plot the dygraph when there is only one country selected
     if (length(input$country_selection_corr) != 1) {
       return(NULL)
     }
-    data <- trade_by_all()[flow == input$flow_selection_corr] %>% 
-      select(-commodity_id) %>%
-      mutate(trade_usd = as.numeric(trade_usd)) %>% 
-      spread(commodity, trade_usd, fill = 0) %>%
-      select(year, everything())
+    
+    # for the dygraph date should be the first column
+    data <- getSpreadedDataByCommodity(trade_filtered()) %>% select(year, everything())
     data$year = as.Date(paste(data$year, 1, 1, sep = "-"))
     data = as.xts.data.table(as.data.table(data))
     dygraph(data = data) %>% dyRangeSelector()
