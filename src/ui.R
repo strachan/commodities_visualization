@@ -22,6 +22,10 @@ shinyUI(dashboardPage(skin = 'green',
       # Map tab content
       tabItem(tabName = 'map',
         fluidRow(
+          column(12, h1("Comparing Country Trade Value By Commodity"))
+        ),
+        br(),
+        fluidRow(
           column(9, selectizeInput(inputId = 'category_selection_map', label = 'Category',
                                    choices = categories$category, width = '100%'))
         ),
@@ -42,6 +46,10 @@ shinyUI(dashboardPage(skin = 'green',
         )
       ),
       tabItem(tabName = 'bar_graph',
+        fluidRow(
+          column(12, h1("Comparing Impact of Commodities on Total Import and Export Costs"))
+        ),
+        br(),
         fluidRow(
           column(3, sliderInput(inputId = "year_selection_bar", label = "Year", min = min(years$year), max = max(years$year), 
                                 value = max(years$year), step = 1)),
@@ -79,6 +87,10 @@ shinyUI(dashboardPage(skin = 'green',
         )
       ),
       tabItem(tabName = 'corr_graph',
+        fluidRow(
+          column(12, h1("Exploring and Comparing Commodity Imports and Exports over Time"))
+        ),
+        br(),
         fluidRow(
           column(6,
             fluidRow(
