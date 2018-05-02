@@ -10,6 +10,15 @@ shinyServer(function(input, output, session){
   
   conn <- dbConnector(session, dbname = './commodities.sqlite')
   
+  #### common functions ####
+  
+  # function to calculate the difference between Export and Import trade values
+  calculateBalanceTrade <- function(data) {
+    data %>% 
+      mutate(trade_usd = as.numeric(trade_usd)) %>% spread(flow, trade_usd, fill = 0) %>%
+      mutate(trade_usd = Export - Import)
+  }
+  
   #### code for the map graph ####
   
   getCommodityId <- function(commodity_name) {
@@ -41,18 +50,11 @@ shinyServer(function(input, output, session){
     updateSliderInput(session, inputId = 'year_selection_map', value = max(years), min = min(years), max = max(years))
   })
   
-  # function to calculate the difference between Export and Import trade values
-  calculateBalanceTrade <- function(data) {
-    data[year == input$year_selection_map] %>% 
-      mutate(trade_usd = as.numeric(trade_usd)) %>% spread(flow, trade_usd, fill = 0) %>%
-      mutate(trade_usd = Export - Import)
-  }
-  
   # reactive function to get the data according to the inputs selected
   # for the world map graph
   countries_trade <- reactive({
     commodity_id = getCommodityId(input$commodity_selection_map)
-    trade_data <- dbGetDataByCommodity(conn, commodity_id)
+    trade_data <- dbGetDataByCommodity(conn, commodity_id)[year == input$year_selection_map]
     
     # when Balance flow is selected we must calculate the difference
     # between export and import
@@ -60,7 +62,7 @@ shinyServer(function(input, output, session){
       return(calculateBalanceTrade(trade_data))
     }
     
-    trade_data[year == input$year_selection_map & flow == input$flow_selection_map]
+    trade_data[flow == input$flow_selection_map]
   }) 
 
   getMapChartOptions <- function(min_value, max_value) {
@@ -89,30 +91,29 @@ shinyServer(function(input, output, session){
   
   #### code for the bar graph ####
   
+  # reactive function to update data when inputs are changed
   trade_by_country <- reactive({
-    trade_data <- dbGetDataByCountry(conn, input$country_selection)
+    trade_data <- dbGetDataByCountry(conn, input$country_selection)[year == input$year_selection_bar & 
+                                                                      category != 'all_commodities']
     
     if (input$flow_selection_bar == 'Balance') {
-      
-      trade_usd_balance = trade_data[year == input$year_selection_bar & category != 'all_commodities'] %>% 
-                          mutate(trade_usd = as.numeric(trade_usd)) %>% 
-                          spread(flow, trade_usd, fill = 0) %>%
-                          mutate(trade_usd = Export - Import)
-      return(as.data.table(trade_usd_balance))
+      trade_balance_data = calculateBalanceTrade(trade_data)
+      return(as.data.table(trade_balance_data))
     }
     
-    trade_data[category != 'all_commodities' & 
-                 flow == input$flow_selection_bar &
-                 year == input$year_selection_bar]
+    trade_data[flow == input$flow_selection_bar]
   })
   
+  # observe changes in country selection to update to categories that has data
   observeEvent(input$country_selection, {
     selectable_categories <- sort(unique(trade_by_country()[, category]))
     updateSelectInput(session, inputId = 'category_selection_bar', choices = selectable_categories)
   })
   
+  # observe changes in category selection to update the commodities that has data
   observeEvent(input$category_selection_bar, {
     number_of_commodities <- length(unique(trade_by_country()[category == input$category_selection_bar, commodity]))
+    # limit number of commodities to select
     number_of_commodities_options <- ifelse(number_of_commodities < 10,
                                             number_of_commodities,
                                             10)
@@ -121,21 +122,64 @@ shinyServer(function(input, output, session){
                       selected = max(number_of_commodities_options[[1]]))
   })
   
+  getTotalAmount <- function(data) {
+    sum(data[, trade_usd])
+  }
+  
+  calculatePercentage <- function(data, total_value) {
+    sum(as.numeric(data)) * 100 / total_value
+  }
+  
+  # infobox to show the total trade amount in US dollars for the country and flow selected
   output$total_trade_country <- renderInfoBox({
-    total_value <- sum(trade_by_country()[, trade_usd])
+    total_value <- getTotalAmount(trade_by_country())
+    # format the total amount to currency
     total_value_formatted <- paste0("$", formatC(as.numeric(total_value), format="f", digits=2, big.mark=","))
     infoBox("Total Trade (in USD)", total_value_formatted, icon = icon("calculator"))
   })
   
+  # infobox to show the percentage that the categories selected influence on the total amount
+  output$categories_influence_percentage <- renderInfoBox({
+    total_value <- getTotalAmount(trade_by_country())
+    category_data <- trade_by_country()[,sum(trade_usd) ,by=category][order(-V1)][1:input$number_categories_selection]
+    percentage <- calculatePercentage(category_data[,V1], total_value)
+    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'olive')
+  })
+  
+  # infobox to show the percentage that the commodities selected influence on the total amount
+  output$commodities_influence_percentage <- renderInfoBox({
+    total_value <- getTotalAmount(trade_by_country())
+    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    percentage <- calculatePercentage(commodity_data[,trade_usd], total_value)
+    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'green')
+  })
+  
+  getTopCategories <- function(data, n) {
+    data[,sum(trade_usd)/1000000, by=category][order(-V1)][1:n]
+  }
+  
+  getTopCommodities <- function(data, n) {
+    data[order(-trade_usd)][1:n]
+  }
+  
+  # table to show what each category id means on the bar graph and the exact trade value
   output$categories_legend <- renderTable({
-    category_data = trade_by_country()[,sum(trade_usd)/1000000, 
-                                       by=.(country_or_area, category)][order(-V1)][1:input$number_categories_selection]
+    category_data = getTopCategories(trade_by_country(), input$number_categories_selection)
     categories_plotted <- right_join(categories, category_data)
     data.table(id = categories_plotted$id, category = categories_plotted$category, trade_usd_X1MM = categories_plotted$V1)
   })
   
+  # table to show what each commodity id means on the bar graph and the exact trade value
+  output$commodities_legend <- renderTable({
+    one_category_data <- trade_by_country()[category == input$category_selection_bar]
+    commodity_data <- getTopCommodities(one_category_data, input$number_commodities_selection)
+    commodities_plotted <- right_join(commodities, commodity_data)
+    data.table(id = commodities_plotted$id, commodity = commodities_plotted$commodity, trade_usd = as.numeric(commodities_plotted$trade_usd))
+  })
+  
+  # bar graph by categories
   output$category_sum <- renderPlot({
-    category_data = trade_by_country()[,sum(trade_usd)/1000000,by=category][order(-V1)][1:input$number_categories_selection]
+    category_data = getTopCategories(trade_by_country(), input$number_categories_selection)
     categories_plotted <- right_join(categories, category_data)
     ggplot(data = category_data, aes(x = reorder(category, -as.numeric(V1)), y = as.numeric(V1))) + 
       geom_bar(stat = 'identity', fill = '#768858') + ylab('Trade in US$ (x 1MM)') + 
@@ -144,28 +188,10 @@ shinyServer(function(input, output, session){
       scale_x_discrete('Categories', labels = categories_plotted$id)
   })
   
-  output$categories_influence_percentage <- renderInfoBox({
-    total_value <- sum(trade_by_country()[, trade_usd])
-    category_data <- trade_by_country()[,sum(trade_usd) ,by=category][order(-V1)][1:input$number_categories_selection]
-    percentage <- sum(as.numeric(category_data[,V1])) / total_value * 100
-    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'olive')
-  })
-  
-  output$commodities_influence_percentage <- renderInfoBox({
-    total_value <- sum(trade_by_country()[, trade_usd])
-    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
-    percentage <- sum(as.numeric(commodity_data[,trade_usd])) / total_value * 100
-    infoBox("Influence Percentage", paste0(format(percentage, format="f", digits = 2), "%"), color = 'green')
-  })
-  
-  output$commodities_legend <- renderTable({
-    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
-    commodities_plotted <- right_join(commodities, commodity_data)
-    data.table(id = commodities_plotted$id, commodity = commodities_plotted$commodity, trade_usd = as.numeric(commodities_plotted$trade_usd))
-  })
-  
+  # bar graph by commodities
   output$commodities_bar <- renderPlot({
-    commodity_data <- trade_by_country()[category == input$category_selection_bar][order(-trade_usd)][1:input$number_commodities_selection]
+    one_category_data <- trade_by_country()[category == input$category_selection_bar]
+    commodity_data <- getTopCommodities(one_category_data, input$number_commodities_selection)
     commodities_plotted <- right_join(commodities, commodity_data)
     ggplot(data = commodity_data, aes(x = reorder(commodity, -as.numeric(trade_usd)), y = as.numeric(trade_usd))) + 
       geom_bar(stat = 'identity', fill = '#609040') + xlab('Commodities') + ylab('Trade in US$') +
