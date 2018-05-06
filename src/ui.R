@@ -8,8 +8,8 @@ shinyUI(dashboardPage(skin = 'green',
     sidebarUserPanel("Guilherme Strachan",
                      image = "https://yt3.ggpht.com/-04uuTMHfDz4/AAAAAAAAAAI/AAAAAAAAAAA/Kjeupp-eNNg/s100-c-k-no-rj-c0xffffff/photo.jpg"),
     sidebarMenu(
-      menuItem('Map', tabName = 'map', icon = icon('map')),
       menuItem('Bar Graph', tabName = 'bar_graph', icon = icon('bar-chart-o')),
+      menuItem('Map', tabName = 'map', icon = icon('map')),
       menuItem('Correlation', tabName = 'corr_graph', icon = icon('line-chart', lib = 'font-awesome'))
     )
   ),
