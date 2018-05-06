@@ -3,8 +3,8 @@ library(data.table)
 library(dplyr)
 
 
-csvpath = "../../commodity_trade_statistics_data.csv"
-dbname = "./commodities.sqlite"
+csvpath = "./commodity_trade_statistics_data.csv"
+dbname = "./commodities_visualization/src/commodities.sqlite"
 tblname = "trade"
 tblname2 = "commodity"
 tblname3 = "category"
@@ -45,6 +45,7 @@ data = data %>% rename(commodity_id = id)
 
 # remove the number from the categories
 category_df[1:(nrow(category_df) - 1), 'category'] = sapply(category_df[1:(nrow(category_df) - 1), 'category'], substring, first = 4)
+category_df$category = sapply(category_df$category, gsub, pattern = "_", replacement = " ")
 
 # select columns that will be used to store in the database
 data = data %>% select(country_or_area, year, flow, trade_usd, commodity_id)
